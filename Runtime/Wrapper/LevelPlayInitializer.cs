@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using com.unity3d.mediation;
 using LevelPlayMediationWrapper.Runtime.Wrapper;
 using LittleBitGames.Ads.Configs;
 using LittleBitGames.Environment;
 using LittleBitGames.Environment.Ads;
+using UnityEngine;
 
 namespace YandexMobileAds.Wrapper
 {
@@ -21,19 +23,38 @@ namespace YandexMobileAds.Wrapper
 
         public void Initialize()
         {
-            IronSourceEvents.onSdkInitializationCompletedEvent += IronSourceEventsOnonSdkInitializationCompletedEvent;
+            List<LevelPlayAdFormat> levelPlayAdFormats = new();
+            if (_config.IsRewarded)
+            {
+                levelPlayAdFormats.Add(LevelPlayAdFormat.REWARDED);
+            }
+            if (_config.IsBanner)
+            {
+                levelPlayAdFormats.Add(LevelPlayAdFormat.BANNER);
+            }
+            if (_config.IsInter)
+            {
+                levelPlayAdFormats.Add(LevelPlayAdFormat.INTERSTITIAL);
+            }
             
-            IronSource.Agent.init(_config.LevelPlaySettings.PlatformSettings.AppKey);
-            IronSource.Agent.setAdaptersDebug(IsDebugMode);
-            IronSource.Agent.setManualLoadRewardedVideo(true);
+            
+            LevelPlay.Init(_config.LevelPlaySettings.PlatformSettings.AppKey,null, levelPlayAdFormats.ToArray());
+
+            LevelPlay.OnInitSuccess += configuration =>
+            {
+                IronSourceEventsOnonSdkInitializationCompletedEvent();
+            };
+            
+            LevelPlay.OnInitFailed += configuration =>
+            {
+                Debug.LogError("INIT FAILED " + configuration.ErrorMessage);
+            };
         }
 
         private void IronSourceEventsOnonSdkInitializationCompletedEvent()
         {
             IsInitialized = true;
             OnMediationInitialized?.Invoke();
-            
-            IronSourceEvents.onSdkInitializationCompletedEvent -= IronSourceEventsOnonSdkInitializationCompletedEvent;
         }
     }
 }
